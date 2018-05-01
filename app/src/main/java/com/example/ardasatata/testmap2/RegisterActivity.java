@@ -1,5 +1,6 @@
 package com.example.ardasatata.testmap2;
 
+import android.app.ListActivity;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.support.annotation.NonNull;
@@ -16,6 +17,9 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
 public class RegisterActivity extends AppCompatActivity {
 
@@ -27,6 +31,10 @@ public class RegisterActivity extends AppCompatActivity {
     //defining firebaseauth object
     private FirebaseAuth firebaseAuth;
     private String email,password;
+
+    DatabaseReference userDatabase;
+
+    FirebaseAuth.AuthStateListener mAuthListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,9 +84,36 @@ public class RegisterActivity extends AppCompatActivity {
 
 
                     registerUser(email,password);
+
+
                 }
             }
         });
+
+        mAuthListener = new FirebaseAuth.AuthStateListener() {
+            @Override
+            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
+                FirebaseUser user = firebaseAuth.getCurrentUser();
+                if (user != null) {
+                    // User is signed in
+
+                    userDatabase = FirebaseDatabase.getInstance().getReference("users");
+
+                    FirebaseUser FireUser = FirebaseAuth.getInstance().getCurrentUser();
+
+                    String userId = FireUser.getUid();
+
+                    User user1 = new User(userId,"",email);
+
+                    userDatabase.child(userId).setValue(user1);
+                }
+                else {
+                    Toast.makeText(getApplicationContext(), "no id got", Toast.LENGTH_SHORT).show();
+                }
+
+            }
+        };
+
 
 
         textViewSignin.setOnClickListener(new View.OnClickListener() {
@@ -89,6 +124,11 @@ public class RegisterActivity extends AppCompatActivity {
             }
         });
 
+    }
+
+    public void onStart(){
+        super.onStart();
+        firebaseAuth.addAuthStateListener(mAuthListener); //firebaseAuth is of class FirebaseAuth
     }
 
     private void registerUser(String email,String password){

@@ -1,25 +1,33 @@
 package com.example.ardasatata.testmap2;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.res.Resources;
-import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
-import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.BitmapDescriptorFactory;
-import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+
+import java.util.ArrayList;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback{
+
+    private LatLng latLng;
 
     private GoogleMap mMap;
 
@@ -30,12 +38,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     Pedagang test1;
 
+    private FirebaseAuth firebaseAuth;
 
-//
-// fm.beginTransaction()
-//         .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out)
-//          .show(somefrag)
-//          .commit();
+    private ArrayList<Pedagang> pedagangList = new ArrayList<Pedagang>();
+    DatabaseReference databasePedagang;
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,8 +58,62 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
+        firebaseAuth = FirebaseAuth.getInstance();
+
+        if(firebaseAuth.getCurrentUser() == null){
+            // user is already logged in
+            // open profile activity
+            startActivity(new Intent(getApplicationContext(), RegisterActivity.class));
+            //close this activity
+            finish();
+
+        }
+
+        databasePedagang = FirebaseDatabase.getInstance().getReference("pedagang");
+
+        databasePedagang.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                pedagangList.clear();
+
+                mMap.clear();
+
+                for (DataSnapshot postSnapshot : dataSnapshot.getChildren()){
+                    Pedagang pedagang = postSnapshot.getValue(Pedagang.class);
+                    pedagangList.add(new Pedagang(pedagang.getLatlng(),pedagang.isStatus(),pedagang.getNamaDagang(),pedagang.getInfo()));
+                    //pedagangList.add(pedagang);
+                }
+
+                for (Pedagang pedagang : pedagangList){
+                    mMap.addMarker(new MarkerOptions()
+                            .position(new com.google.android.gms.maps.model.LatLng(pedagang.getLatlng().getLatitude(),pedagang.getLatlng().getLongitude()))
+                            //.anchor(0.5f, 0.5f)
+                            .title(pedagang.getNamaDagang())
+                    );
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+
         show = findViewById(R.id.show);
         hide = findViewById(R.id.hide);
+        Button buttonLogout = (Button) findViewById(R.id.logoutMaps);
+
+        buttonLogout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                //logging out the user
+                firebaseAuth.signOut();
+                //closing activity
+                finish();
+                //starting login activity
+                startActivity(new Intent(getApplicationContext(), RegisterActivity.class));
+            }
+        });
 
         test1 = new Pedagang(new LatLng(38.609556, -1.139637),true,"Tahu Campur Pak Sukir","hehe");
 
@@ -96,8 +162,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
 
         // Add a marker in Sydney and move the camera
-        LatLng sydney = new LatLng(-34, 151);
-        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
+        LatLng sydney = new LatLng(-34.0, 151.0);
+        mMap.addMarker(new MarkerOptions().position(new com.google.android.gms.maps.model.LatLng(sydney.getLatitude(),
+                sydney.getLongitude())).title("Marker in Sydney"));
         //mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
 
 //        mMap.addMarker(new MarkerOptions()
@@ -107,12 +174,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 //                .snippet("Snippet1")
 //                );
 
-        mMap.addMarker(new MarkerOptions()
-                .position(test1.getLatlng())
-                .anchor(0.5f, 0.5f)
-                .title(test1.getNamaDagang())
-                .snippet("Snippet1")
-                );
+//        mMap.addMarker(new MarkerOptions()
+//                .position(test1.getLatlng())
+//                .anchor(0.5f, 0.5f)
+//                .title(test1.getNamaDagang())
+//                .snippet("Snippet1")
+//                );
 
         mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
             @Override
@@ -126,6 +193,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 return false;
             }
         });
+
+
 
     }
 }

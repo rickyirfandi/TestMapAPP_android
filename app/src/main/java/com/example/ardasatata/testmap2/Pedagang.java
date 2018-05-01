@@ -1,6 +1,6 @@
 package com.example.ardasatata.testmap2;
 
-import com.google.android.gms.maps.model.LatLng;
+
 
 /**
  * Created by ardasatata on 4/27/18.
@@ -48,7 +48,7 @@ public class Pedagang {
     }
 
     public LatLng getLatlng() {
-        return latlng;
+        return  latlng;
     }
 
     public void setLatlng(LatLng latlng) {
