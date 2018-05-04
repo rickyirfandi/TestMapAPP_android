@@ -11,6 +11,8 @@ public class Pedagang {
     boolean status;
     String namaDagang;
     String info;
+    String id;
+    String email;
 
     public Pedagang(){
 

@@ -1,15 +1,23 @@
 package com.example.ardasatata.testmap2;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.res.Resources;
+import android.net.Uri;
 import android.os.Bundle;
+import android.support.design.widget.BottomSheetBehavior;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
@@ -25,7 +33,7 @@ import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback{
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private LatLng latLng;
 
@@ -43,6 +51,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private ArrayList<Pedagang> pedagangList = new ArrayList<Pedagang>();
     DatabaseReference databasePedagang;
 
+    LinearLayout llBottomSheet;
+    BottomSheetBehavior bottomSheetBehavior;
+
+    TextView bottomSheet1;
+    Button bottomSheetCall;
+
+    String[] PERMISSIONS = {Manifest.permission.CALL_PHONE};
+
     @Override
     protected void onStart() {
         super.onStart();
@@ -58,9 +74,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
+        llBottomSheet = (LinearLayout) findViewById(R.id.bottom_sheet);
+        bottomSheetBehavior = BottomSheetBehavior.from(llBottomSheet);
+
+        bottomSheet1 = findViewById(R.id.bottomSheetText1);
+        bottomSheetCall = findViewById(R.id.bottomSheetCall);
+
         firebaseAuth = FirebaseAuth.getInstance();
 
-        if(firebaseAuth.getCurrentUser() == null){
+        if (firebaseAuth.getCurrentUser() == null) {
             // user is already logged in
             // open profile activity
             startActivity(new Intent(getApplicationContext(), RegisterActivity.class));
@@ -78,17 +100,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                 mMap.clear();
 
-                for (DataSnapshot postSnapshot : dataSnapshot.getChildren()){
+                for (DataSnapshot postSnapshot : dataSnapshot.getChildren()) {
                     Pedagang pedagang = postSnapshot.getValue(Pedagang.class);
-                    pedagangList.add(new Pedagang(pedagang.getLatlng(),pedagang.isStatus(),pedagang.getNamaDagang(),pedagang.getInfo()));
+                    pedagangList.add(new Pedagang(pedagang.getLatlng(), pedagang.isStatus(), pedagang.getNamaDagang(), pedagang.getInfo()));
                     //pedagangList.add(pedagang);
                 }
 
-                for (Pedagang pedagang : pedagangList){
+                for (Pedagang pedagang : pedagangList) {
                     mMap.addMarker(new MarkerOptions()
-                            .position(new com.google.android.gms.maps.model.LatLng(pedagang.getLatlng().getLatitude(),pedagang.getLatlng().getLongitude()))
+                            .position(new com.google.android.gms.maps.model.LatLng(pedagang.getLatlng().getLatitude(), pedagang.getLatlng().getLongitude()))
                             //.anchor(0.5f, 0.5f)
                             .title(pedagang.getNamaDagang())
+                            .snippet(pedagang.getInfo())
                     );
                 }
             }
@@ -115,7 +138,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         });
 
-        test1 = new Pedagang(new LatLng(38.609556, -1.139637),true,"Tahu Campur Pak Sukir","hehe");
+        test1 = new Pedagang(new LatLng(38.609556, -1.139637), true, "Tahu Campur Pak Sukir", "hehe");
 
         show.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -188,9 +211,36 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 CharSequence text = test1.getInfo();
                 int duration = Toast.LENGTH_SHORT;
 
+                bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+
+                bottomSheet1.setText(marker.getSnippet());
+
+                bottomSheetCall.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Intent intent = new Intent(Intent.ACTION_CALL, Uri.parse("tel:" + "08199999999"));
+                        if (ActivityCompat.checkSelfPermission(getApplicationContext(), android.Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
+
+                            ActivityCompat.requestPermissions(MapsActivity.this, PERMISSIONS,1);
+
+                            // TODO: Consider calling
+                            //    ActivityCompat#requestPermissions
+                            // here to request the missing permissions, and then overriding
+                            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                            //                                          int[] grantResults)
+                            // to handle the case where the user grants the permission. See the documentation
+                            // for ActivityCompat#requestPermissions for more details.
+                            return;
+                        }
+                        startActivity(intent);
+                    }
+                });
+
+                mMap.moveCamera(CameraUpdateFactory.newLatLng(marker.getPosition()));
+
                 Toast toast = Toast.makeText(context, text, duration);
                 toast.show();
-                return false;
+                return true;
             }
         });
 

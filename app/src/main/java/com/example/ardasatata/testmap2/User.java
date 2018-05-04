@@ -9,6 +9,8 @@ public class User {
     String id;
     String name;
     String email;
+    String alamat;
+    LatLng latLng;
 
     public User() {
     }
