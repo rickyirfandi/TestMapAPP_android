@@ -43,6 +43,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     Button show;
     Button hide;
+    Button profile;
 
     Pedagang test1;
 
@@ -56,6 +57,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     TextView bottomSheet1;
     Button bottomSheetCall;
+    Button bottomSheetPanggil;
 
     String[] PERMISSIONS = {Manifest.permission.CALL_PHONE};
 
@@ -79,6 +81,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         bottomSheet1 = findViewById(R.id.bottomSheetText1);
         bottomSheetCall = findViewById(R.id.bottomSheetCall);
+        bottomSheetPanggil = findViewById(R.id.bottomSheetPanggil);
+
 
         firebaseAuth = FirebaseAuth.getInstance();
 
@@ -111,7 +115,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                             .position(new com.google.android.gms.maps.model.LatLng(pedagang.getLatlng().getLatitude(), pedagang.getLatlng().getLongitude()))
                             //.anchor(0.5f, 0.5f)
                             .title(pedagang.getNamaDagang())
-                            .snippet(pedagang.getInfo())
+                            .snippet(pedagang.getNamaDagang())
                     );
                 }
             }
@@ -124,6 +128,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         show = findViewById(R.id.show);
         hide = findViewById(R.id.hide);
+        profile = findViewById(R.id.profile);
+
+        profile.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                startActivity(new Intent(getApplicationContext(), ProfileActivity.class));
+                //close this activity
+            }
+        });
+
         Button buttonLogout = (Button) findViewById(R.id.logoutMaps);
 
         buttonLogout.setOnClickListener(new View.OnClickListener() {
@@ -206,7 +220,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
             @Override
-            public boolean onMarkerClick(Marker marker) {
+            public boolean onMarkerClick(final Marker marker) {
                 Context context = getApplicationContext();
                 CharSequence text = test1.getInfo();
                 int duration = Toast.LENGTH_SHORT;
@@ -233,6 +247,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                             return;
                         }
                         startActivity(intent);
+                    }
+                });
+
+                bottomSheetPanggil.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        DatabaseReference refPanggil = FirebaseDatabase.getInstance().getReference("pedagang").child(marker.getSnippet()).child();
                     }
                 });
 
