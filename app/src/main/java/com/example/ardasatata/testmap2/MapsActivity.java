@@ -5,11 +5,14 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
+import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.design.widget.BottomSheetBehavior;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -17,6 +20,8 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -24,6 +29,8 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -31,9 +38,15 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+import com.google.android.gms.location.LocationRequest;
+
 import java.util.ArrayList;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
+
+    private static final String TAG = "";
+    private static final float DEFAULT_ZOOM =  14.0f;
+    public static int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION =1;
 
     private LatLng latLng;
 
@@ -55,11 +68,31 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     LinearLayout llBottomSheet;
     BottomSheetBehavior bottomSheetBehavior;
 
-    TextView bottomSheet1;
+    TextView bottomSheetNama;
+    TextView bottomSheetInfo;
     Button bottomSheetCall;
     Button bottomSheetPanggil;
 
     String[] PERMISSIONS = {Manifest.permission.CALL_PHONE};
+
+    Target targetUser;
+    DatabaseReference userDatabase;
+
+
+
+    LocationRequest mLocationRequest;
+    private long UPDATE_INTERVAL = 10 * 1000;  /* 10 secs */
+    private long FASTEST_INTERVAL = 2000; /* 2 sec */
+    boolean mLocationPermissionGranted;
+
+    FusedLocationProviderClient mFusedLocationProviderClient;
+
+    Location mLastKnownLocation;
+    Location mDefaultLocation;
+    LatLng currentPos;
+
+    MarkerOptions yourMarkerOptions;
+    Marker yourMarker;
 
     @Override
     protected void onStart() {
@@ -78,13 +111,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         llBottomSheet = (LinearLayout) findViewById(R.id.bottom_sheet);
         bottomSheetBehavior = BottomSheetBehavior.from(llBottomSheet);
+        bottomSheetBehavior.setState(BottomSheetBehavior.STATE_HIDDEN);
 
-        bottomSheet1 = findViewById(R.id.bottomSheetText1);
+        bottomSheetNama = findViewById(R.id.bottomSheetNamaDagang);
+        bottomSheetInfo = findViewById(R.id.bottomSheetInfo);
         bottomSheetCall = findViewById(R.id.bottomSheetCall);
         bottomSheetPanggil = findViewById(R.id.bottomSheetPanggil);
 
-
         firebaseAuth = FirebaseAuth.getInstance();
+
+        getLocationPermission();
+        mFusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
+        getDeviceLocation();
+
+        userDatabase = FirebaseDatabase.getInstance().getReference("users").child(firebaseAuth.getCurrentUser().getUid());
 
         if (firebaseAuth.getCurrentUser() == null) {
             // user is already logged in
@@ -106,16 +146,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                 for (DataSnapshot postSnapshot : dataSnapshot.getChildren()) {
                     Pedagang pedagang = postSnapshot.getValue(Pedagang.class);
-                    pedagangList.add(new Pedagang(pedagang.getLatlng(), pedagang.isStatus(), pedagang.getNamaDagang(), pedagang.getInfo()));
+                    pedagangList.add(new Pedagang(pedagang.getId(),pedagang.getLatlng(), pedagang.isStatus(), pedagang.getNamaDagang(), pedagang.getInfo()));
                     //pedagangList.add(pedagang);
                 }
 
                 for (Pedagang pedagang : pedagangList) {
                     mMap.addMarker(new MarkerOptions()
                             .position(new com.google.android.gms.maps.model.LatLng(pedagang.getLatlng().getLatitude(), pedagang.getLatlng().getLongitude()))
-                            //.anchor(0.5f, 0.5f)
                             .title(pedagang.getNamaDagang())
-                            .snippet(pedagang.getNamaDagang())
+                            .snippet(pedagang.getId())
                     );
                 }
             }
@@ -227,7 +266,24 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                 bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
 
-                bottomSheet1.setText(marker.getSnippet());
+                getDeviceLocation();
+
+                DatabaseReference pedagangRef = FirebaseDatabase.getInstance().getReference("pedagang").child(marker.getSnippet());
+
+                pedagangRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(DataSnapshot dataSnapshot) {
+                        bottomSheetNama.setText(dataSnapshot.child("namaDagang").getValue(String.class));
+                        bottomSheetInfo.setText(dataSnapshot.child("info").getValue(String.class));
+                    }
+
+                    @Override
+                    public void onCancelled(DatabaseError databaseError) {
+
+                    }
+                });
+
+
 
                 bottomSheetCall.setOnClickListener(new View.OnClickListener() {
                     @Override
@@ -251,11 +307,30 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 });
 
                 bottomSheetPanggil.setOnClickListener(new View.OnClickListener() {
+                    User userForTarget;
                     @Override
                     public void onClick(View view) {
-                        DatabaseReference refPanggil = FirebaseDatabase.getInstance().getReference("pedagang").child(marker.getSnippet()).child();
+                        DatabaseReference refPanggil = FirebaseDatabase.getInstance().getReference("pedagang").child(marker.getSnippet()).child("target");
+                        final DatabaseReference userTarget = FirebaseDatabase.getInstance().getReference("users").child(firebaseAuth.getCurrentUser().getUid());
+                        userTarget.addListenerForSingleValueEvent(new ValueEventListener() {
+                            @Override
+                            public void onDataChange(DataSnapshot dataSnapshot) {
+                                userForTarget = dataSnapshot.getValue(User.class);
+                                System.out.println(currentPos);
+                                System.out.println(mLastKnownLocation);
+                            }
+
+                            @Override
+                            public void onCancelled(DatabaseError databaseError) {
+
+                            }
+                        });
+                        targetUser = new Target(userForTarget,currentPos);
+                        refPanggil.setValue(targetUser);
                     }
                 });
+
+
 
                 mMap.moveCamera(CameraUpdateFactory.newLatLng(marker.getPosition()));
 
@@ -266,6 +341,81 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         });
 
 
+    }
+
+    private void getDeviceLocation() {
+    /*
+     * Get the best and most recent location of the device, which may be null in rare
+     * cases when a location is not available.
+     */
+
+        mLocationRequest = LocationRequest.create()
+                .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
+                .setInterval(10 * 1000)        // 10 seconds, in milliseconds
+                .setFastestInterval(1 * 1000); // 1 second, in milliseconds
+
+
+        try {
+            if (mLocationPermissionGranted) {
+                Task locationResult = mFusedLocationProviderClient.getLastLocation();
+                locationResult.addOnCompleteListener(this, new OnCompleteListener() {
+                    @Override
+                    public void onComplete(@NonNull Task task) {
+                        if (task.isSuccessful()) {
+                            // Set the map's camera position to the current location of the device.
+                            mLastKnownLocation = (Location) task.getResult();
+                            currentPos = new LatLng(mLastKnownLocation.getLatitude(),
+                                    mLastKnownLocation.getLongitude());
+                            //mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new com.google.android.gms.maps.model.LatLng(currentPos.getLatitude(),currentPos.getLongitude()) , 14.0f));
+                            // Add a marker in Sydney and move the camera
+
+//                            yourMarkerOptions = new MarkerOptions();
+//                            yourMarkerOptions.title("Title");
+//                            yourMarkerOptions.snippet("");
+//                            yourMarkerOptions.position(currentPos);
+//                            //Set your marker icon using this method.
+//                            //yourMarkerOptions.icon();
+//
+//                            yourMarker = mMap.addMarker(yourMarkerOptions);
+
+                            //pedagangDatabase.child(pedagangId).child("latlng").setValue(currentPos);
+
+                            //userDatabase.child("latlng").setValue(currentPos);
+
+                        } else {
+                            Log.d(TAG, "Current location is null. Using defaults.");
+                            Log.e(TAG, "Exception: %s", task.getException());
+                            //mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new com.google.android.gms.maps.model.LatLng(mDefaultLocation.getLatitude(),mDefaultLocation.getLongitude()), DEFAULT_ZOOM));
+                            mMap.getUiSettings().setMyLocationButtonEnabled(false);
+                        }
+                    }
+                });
+
+
+            }
+        } catch(SecurityException e)  {
+            Log.e("Exception: %s", e.getMessage());
+        }
+
 
     }
+
+    private void getLocationPermission() {
+    /*
+     * Request location permission, so that we can get the location of the
+     * device. The result of the permission request is handled by a callback,
+     * onRequestPermissionsResult.
+     */
+        if (ContextCompat.checkSelfPermission(this.getApplicationContext(),
+                android.Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+            mLocationPermissionGranted = true;
+        } else {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
+                    PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
+        }
+    }
+
+
 }
