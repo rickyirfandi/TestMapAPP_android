@@ -275,6 +275,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     public void onDataChange(DataSnapshot dataSnapshot) {
                         bottomSheetNama.setText(dataSnapshot.child("namaDagang").getValue(String.class));
                         bottomSheetInfo.setText(dataSnapshot.child("info").getValue(String.class));
+                        mMap.moveCamera(CameraUpdateFactory.newLatLng(marker.getPosition()));
                     }
 
                     @Override
@@ -332,7 +333,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
 
-                mMap.moveCamera(CameraUpdateFactory.newLatLng(marker.getPosition()));
 
                 Toast toast = Toast.makeText(context, text, duration);
                 toast.show();
