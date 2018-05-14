@@ -13,12 +13,14 @@
 
     <TextView
         android:layout_width="match_parent"
-        android:layout_height="80dp"
+        android:layout_height="76dp"
         android:layout_weight="0"
         android:background="@color/colorPrimaryDark"
         android:gravity="center"
         android:text="Info"
-        android:textColor="@android:color/white" />
+        android:textColor="@android:color/white"
+        android:textSize="24sp"
+        android:textStyle="bold" />
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -32,20 +34,26 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:background="@color/common_google_signin_btn_text_dark_default"
             android:paddingLeft="8dp"
             android:text="Nama Pedagang"
-            android:textAlignment="textStart"
-            android:textSize="24sp" />
+            android:textAlignment="center"
+            android:textColor="@android:color/darker_gray"
+            android:textSize="24sp"
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/bottomSheetInfo"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:paddingLeft="8dp"
+            android:paddingLeft="15dp"
+            android:paddingRight="15dp"
             android:text="Info"
             android:textAlignment="textStart"
             android:textSize="24sp" />
+
+
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -55,18 +63,22 @@
             android:orientation="horizontal">
 
             <Button
-                android:id="@+id/bottomSheetCall"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Telpon" />
-
-            <Button
                 android:id="@+id/bottomSheetPanggil"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_margin="30dp"
                 android:layout_weight="1"
-                android:text="Panggil Kesini" />
+                android:background="@drawable/tblpanggilmini" />
+
+            <Button
+                android:id="@+id/bottomSheetCall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="30dp"
+                android:layout_weight="1"
+                android:background="@drawable/tbltelponmini" />
+
+
         </LinearLayout>
     </LinearLayout>
 

@@ -10,6 +10,7 @@ import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -25,7 +26,7 @@ public class RegisterActivity extends AppCompatActivity {
 
     private EditText editTextEmail;
     private EditText editTextPassword;
-    private Button buttonSignup;
+    private ImageView buttonSignup;
     private ProgressDialog progressDialog;
     private TextView textViewSignin;
     //defining firebaseauth object
@@ -44,7 +45,7 @@ public class RegisterActivity extends AppCompatActivity {
         editTextEmail = (EditText) findViewById(R.id.registerEmail);
         editTextPassword = (EditText) findViewById(R.id.registerPassword);
 
-        buttonSignup = (Button) findViewById(R.id.registerSignIn);
+        buttonSignup = (ImageView) findViewById(R.id.registerSignIn);
         textViewSignin = (TextView) findViewById(R.id.registerLogin);
 
         progressDialog = new ProgressDialog(RegisterActivity.this);

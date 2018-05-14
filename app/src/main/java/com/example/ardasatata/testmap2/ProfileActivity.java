@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.google.firebase.auth.FirebaseAuth;
@@ -25,7 +26,7 @@ public class ProfileActivity extends AppCompatActivity {
     EditText ETemail;
     EditText ETalamat;
 
-    Button BTsave;
+    ImageView BTsave;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,7 +39,7 @@ public class ProfileActivity extends AppCompatActivity {
         ETname = findViewById(R.id.profileName);
         ETemail = findViewById(R.id.profileEmail);
         ETalamat = findViewById(R.id.profileAlamat);
-        BTsave = findViewById(R.id.profileButtonSave);
+        BTsave = (ImageView) findViewById(R.id.profileButtonSave);
 
         if (firebaseAuth.getCurrentUser() == null) {
             // user is already logged in

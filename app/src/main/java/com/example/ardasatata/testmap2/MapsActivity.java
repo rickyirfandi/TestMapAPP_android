@@ -16,6 +16,7 @@ import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -26,6 +27,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -54,9 +56,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     SupportMapFragment mapFragment;
 
-    Button show;
-    Button hide;
-    Button profile;
+    ImageView show;
+    ImageView hide;
+    ImageView profile;
 
     Pedagang test1;
 
@@ -155,6 +157,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                             .position(new com.google.android.gms.maps.model.LatLng(pedagang.getLatlng().getLatitude(), pedagang.getLatlng().getLongitude()))
                             .title(pedagang.getNamaDagang())
                             .snippet(pedagang.getId())
+                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.marker))
                     );
                 }
             }
@@ -177,7 +180,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         });
 
-        Button buttonLogout = (Button) findViewById(R.id.logoutMaps);
+        ImageView buttonLogout = (ImageView) findViewById(R.id.logoutMaps);
 
         buttonLogout.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -239,9 +242,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         // Add a marker in Sydney and move the camera
         LatLng sydney = new LatLng(-34.0, 151.0);
+        float zoomLevel = 16.0f; //This goes up to 21
         mMap.addMarker(new MarkerOptions().position(new com.google.android.gms.maps.model.LatLng(sydney.getLatitude(),
                 sydney.getLongitude())).title("Marker in Sydney"));
-        //mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+        //mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(-34.0, 151.0),zoomLevel));
 
 //        mMap.addMarker(new MarkerOptions()
 //                .position(new LatLng(38.609556, -1.139637))
